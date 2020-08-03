@@ -21,6 +21,7 @@ def parse_homework_status(homework):
         homework_name = homework['homework_name']
     except KeyError as e:
         logging.error(f'Error parsing homework: {e}')
+        raise e
     if homework['status'] == 'rejected':
         verdict = 'К сожалению в работе нашлись ошибки.'
     elif homework['status'] == 'approved':
@@ -31,11 +32,8 @@ def parse_homework_status(homework):
 
 
 def get_homework_statuses(current_timestamp):
-    if not (current_timestamp and isinstance(current_timestamp, int)):
-        e = TypeError(f'Positive integer is expected for '
-                      f'current_timestamp, got {current_timestamp}.')
-        logging.error(f'Error getting statuses: {e}')
-        raise e
+    if current_timestamp is None:
+        current_timestamp = int(time.time())
     params = {
         'from_date': current_timestamp
     }
