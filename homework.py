@@ -52,12 +52,12 @@ def main():
             new_homework = get_homework_statuses(current_timestamp)
             if new_homework.get('homeworks'):
                 send_message(parse_homework_status(new_homework.get('homeworks')[0]))
-            current_timestamp = new_homework.get('current_date')
-            if current_timestamp and isinstance(current_timestamp, int):
-                time.sleep(300)
-            else:
-                raise TypeError(f'Positive integer is expected for '
-                                f'current_timestamp, got {current_timestamp}.')
+                current_timestamp = new_homework.get('current_date')
+                if current_timestamp and isinstance(current_timestamp, int):
+                    time.sleep(300)
+                else:
+                    raise TypeError(f'Positive integer is expected for '
+                                    f'current_timestamp, got {current_timestamp}.')
 
         except Exception as e:
             print(f'Бот упал с ошибкой: {e}')
