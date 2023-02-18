@@ -6,7 +6,6 @@ import telegram
 from bunch import bunchify
 
 import task_logger
-from common import logger
 from utils import log, LoggingLevel
 
 
@@ -19,10 +18,10 @@ class Poller:
         self.bot = bot
         self._task: Optional[Task] = None
 
-    async def _worker(self):
+    async def _worker(self) -> None:
         offset: int = 0
         while True:
-            res: Tuple[telegram.Update] = tuple()
+            res: Tuple[telegram.Update]
             try:
                 res = await self.bot.get_updates(offset=offset, timeout=60)
             except (telegram.error.TimedOut, telegram.error.NetworkError) as e:
@@ -44,18 +43,18 @@ class Poller:
                         f'The poller is kept alive.'
                     )
                 ), LoggingLevel.ERROR)
-            for item in res:
-                item: telegram.Update = bunchify(item)
-                offset: int = item.update_id + 1
-                await self.queue.put(item)
-                log(__name__, (
-                    f'Received a message: `{item.message.text}`'
-                ), LoggingLevel.WARNING)
+            else:
+                for item in res:
+                    item_obj: telegram.Update = bunchify(item)
+                    offset = item_obj.update_id + 1
+                    await self.queue.put(item_obj)
+                    log(__name__, (
+                        f'Received a message: `{item_obj.message.text}`'
+                    ), LoggingLevel.WARNING)
 
     async def start(self):
         self._task = task_logger.create_task(
-            self._worker(), logger=logger,
-            message='Poller raised an exception',
+            self._worker(), message='Poller raised an exception',
             loop=asyncio.get_event_loop())
 
     async def stop(self):

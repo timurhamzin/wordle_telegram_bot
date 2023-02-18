@@ -1,13 +1,13 @@
 import asyncio
-import logging
 from typing import List
 
 import telegram
 from bunch import unbunchify
 
 import task_logger
-from common import logger
-from utils import log, LoggingLevel
+from utils import log, LoggingLevel, log_exception
+from wordle.regex_dict import create_regex_dict
+from wordle.wordle_async import WordleGame, WordleException
 
 
 class Worker:
@@ -20,11 +20,22 @@ class Worker:
         self.concurrent_workers = concurrent_workers
         self._tasks: List[asyncio.Task] = []
 
-    @staticmethod
-    async def handle_update(update):
-        print("about to consume an update")
-        await asyncio.sleep(2)
-        print(f'Handled item {unbunchify(update)}')
+    async def handle_update(self, update: telegram.Update) -> None:
+        log(__name__, f'Got update {unbunchify(update)}', LoggingLevel.INFO)
+        my_game = WordleGame(
+            regex_dict=create_regex_dict(timeout_secs=10), word_length=5
+        )
+        attempts: List[str] = update.message.text.split()
+        try:
+            response = await my_game.play(attempts)
+        except WordleException as e:
+            await self.bot.send_message(update.message.chat_id,
+                                        f'{e}\n\n{WordleGame.rules}')
+        else:
+            try:
+                await self.bot.send_message(update.message.chat_id, response)
+            except Exception as e:
+                log_exception(__name__, e, reraise=False)
 
     async def _worker(self):
         while True:
@@ -48,7 +59,7 @@ class Worker:
         for _ in range(self.concurrent_workers):
             self._tasks.append(
                 task_logger.create_task(
-                    self._worker(), logger=logger,
+                    self._worker(),
                     message='Worker task raised an exception',
                     loop=asyncio.get_event_loop())
             )

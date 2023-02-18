@@ -10,7 +10,6 @@ T = TypeVar('T')
 def create_task(
         coroutine: Coroutine[Any, Any, T],
         *,
-        logger: logging.Logger,
         message: str,
         message_args: Tuple[Any, ...] = (),
         loop: Optional[asyncio.AbstractEventLoop] = None,
@@ -27,8 +26,8 @@ def create_task(
         loop = asyncio.get_running_loop()
     task = loop.create_task(coroutine)
     task.add_done_callback(
-        functools.partial(_handle_task_result, logger=logger, message=message,
-                          message_args=message_args)
+        functools.partial(
+            _handle_task_result, message=message, message_args=message_args)
     )
     return task
 

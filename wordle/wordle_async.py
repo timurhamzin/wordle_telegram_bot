@@ -1,46 +1,90 @@
 import asyncio
-import logging
 import re
 from collections import Counter
-from typing import Tuple, List, Dict, Set, Union
+from typing import Tuple, List, Dict, Set, Optional
 
-from utils import raise_with_log, log, LoggingLevel
+from common import create_root_logger
+from utils import log_exception, log, LoggingLevel
 from wordle.regex_dict import RegexDictionary, create_regex_dict
 from wordle.reports import unique_words_played
 
 ALPHABET = 'abcdefghijklmnopqrstuvwxyz'
 
 
+class WordleException(Exception):
+    pass
+
+
+class BadUserInput(WordleException):
+    pass
+
+
+class BadFormatting(BadUserInput):
+    pass
+
+
 class WordleGame:
     """Suggest next move from user attempts expressed in user notation"""
     _suggestions_display_limit = 10
+    rules = """HOW TO USE THE WORDLE BOT:
+
+Example of user input:
+
+    Fundi? ra?the
+
+This means:
+- Two attempts were made: words 'fundi' and 'rathe'.
+
+- Letters in capital case designate the letters 
+revealed in their correct positions. 
+In this example, letter 'f' is in the 1st position in the solution.
+
+- Letters followed by '?' are revealed in incorrect positions. 
+In the example letters 'i' and 'a' are present in the solution,
+but not in the 5th and 2nd positions, respectively.
+
+- All the other letters, that are in the lower case and not followed by '?', 
+are missing from the solution.
+In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
+"""
 
     def __init__(self, regex_dict: RegexDictionary, word_length: int):
         self._word_length = word_length
         self._attempts: List[str] = []
         self._possible_solutions: List[str] = []
-        self._unknown_letters_helpers: List[str] = []
-        self._mixed_letters_helpers: List[str] = []
-        self._positioning_helpers: List[str] = []
+        self._unknown_letters_helpers: List[Tuple[str, int]] = []
+        self._mixed_letters_helpers: List[Tuple[str, int]] = []
+        self._positioning_helpers: List[Tuple[str, int]] = []
         self._present: Dict[str, List[int]] = {}
         self._missing: Set[str] = set()
         self._found: Dict[int, str] = {}
         self._regex_dict = regex_dict
         self._default_word_score = 1000
 
-    async def play(self, attempts: List[str]):
+    async def play(self, attempts: List[str]) -> Optional[str]:
         """Provide suggestions for the next move based on previous attempts'
         results"""
 
-        self._check_attempts_are_in_user_notion(attempts)
+        self._check_attempts_formatting(attempts)
         self._attempts = attempts
 
         self._process_attempts()
 
         word_list = await self._regex_dict.get_word_list(
-            self._get_regex_dict_pattern())
+            self._get_possibles_regex_dict_pattern())
+        if not word_list:
+            log_exception(__name__, WordleException(
+                'No words were found to match all of your attempts.'
+            ))
+            return None
+
         self._possible_solutions = [
             w for w in word_list if not (set(self._present.keys()) - set(w))]
+        if not self._possible_solutions:
+            log_exception(__name__, WordleException(
+                'No words were found to match all of your attempts.'
+            ))
+            return None
 
         unknown_chars_ranked: Dict[str, int] = {
             l: c for l, c in
@@ -49,15 +93,19 @@ class WordleGame:
             if l not in self._found.values() and l not in self._present}
 
         unknown_chars: str = ''.join(unknown_chars_ranked.keys())
-        helpers_for_unknown: List[str] = await self._regex_dict.get_word_list(
-            '^[' + unknown_chars + ']{' + str(self._word_length) + '}$')
-        self._unknown_letters_helpers = self._rank_words(
-            helpers_for_unknown, unknown_chars_ranked)
+        helpers_for_unknown: Optional[List[str]] = (
+            await self._regex_dict.get_word_list(
+                '^[' + unknown_chars + ']{' + str(self._word_length) + '}$'))
+        if helpers_for_unknown:
+            self._unknown_letters_helpers = self._rank_words(
+                helpers_for_unknown, unknown_chars_ranked)
 
-        helpers_mixed: List[str] = await self._regex_dict.get_word_list(
-            '^[' + ALPHABET + ']{5}$')
-        self._mixed_letters_helpers = self._rank_words(
-            helpers_mixed, unknown_chars_ranked)
+        helpers_mixed: Optional[List[str]] = (
+            await self._regex_dict.get_word_list(
+                '^[' + ALPHABET + ']{' + str(self._word_length) + '}$'))
+        if helpers_mixed:
+            self._mixed_letters_helpers = self._rank_words(
+                helpers_mixed, unknown_chars_ranked)
 
         ranks_for_positioning = {
             c: self._default_word_score for c in self._present}
@@ -74,7 +122,9 @@ class WordleGame:
                 f'{attempts}\n'
                 f'Response:\n'
                 f'{response}'
-            ), LoggingLevel.DEBUG)
+            ), LoggingLevel.INFO)
+
+        return response
 
     def generate_response(self) -> str:
         response: List[str] = []
@@ -84,42 +134,43 @@ class WordleGame:
         response.extend(self._possible_solutions[:limit])
 
         response.append('\nHelper words for uncovering untried letters:\n')
-        response.extend(self._unknown_letters_helpers[:limit])
+        response.extend(w for w, _ in self._unknown_letters_helpers[:limit])
 
         response.append('\nHelper words for positioning uncovered letters:\n')
-        response.extend(self._positioning_helpers[:limit])
+        response.extend(w for w, _ in self._positioning_helpers[:limit])
 
-        response.append('\nMiscellaneous helper words:\n')
-        response.extend(self._mixed_letters_helpers[:limit])
+        response.append('\nRandom words of given length:\n')
+        response.extend(w for w, _ in self._mixed_letters_helpers[:limit])
 
         return '\n'.join(response)
 
-    def _check_attempts_are_in_user_notion(self, attempts):
+    def _check_attempts_formatting(self, attempts):
         """Raise value error if any attempts
         do not comply with user notation and word length."""
         abc_set = set(ALPHABET)
         if not all(len(a) == self._word_length
                    for a in unique_words_played(attempts)):
-            raise_with_log(
-                __name__, ValueError(
+            log_exception(
+                __name__, BadFormatting(
                     'Incorrectly formatted input: make sure all attempts '
-                    f'contain {self._word_length} letters.')
+                    f'contain {self._word_length} letters, excluding `?`.'
+                )
             )
         for attempt in map(str.lower, attempts):
             if '??' in attempt:
-                raise_with_log(
-                    __name__, ValueError(
+                log_exception(
+                    __name__, BadFormatting(
                         'Use only latin alphabet characters and `?`.'
-                        'Put `?` only once after letters that were revealed, '
-                        'but whose position in the word is unknown.'
+                        'Put `?` only once after letters revealed in '
+                        'incorrect positions.'
                     ))
             elif set(attempt.replace('?', '')) - abc_set:
-                raise_with_log(
-                    __name__, ValueError(
-                        'Use only latin alphabet characters and `?`'
+                log_exception(
+                    __name__, BadFormatting(
+                        'Use only latin alphabet characters and `?`.'
                     ))
 
-    def _get_regex_dict_pattern(self):
+    def _get_possibles_regex_dict_pattern(self):
         """Returns regex pattern to input into the regex dictionary to
         get possible solutions from it"""
         abc = set(ALPHABET)
@@ -185,7 +236,8 @@ class WordleGame:
                     to_found.append(f'{symbol.lower()}{pos}')
         return ''.join(to_present), set(to_missing), ''.join(to_found)
 
-    def _rank_words(self, words, chars_ranked: Dict[str, int]):
+    def _rank_words(self, words, chars_ranked: Dict[str, int]
+                    ) -> List[Tuple[str, int]]:
         """Rank words based on letter scores given by `chars_ranked`.
         Words with duplicated letters are downgraded."""
         ranks = {
@@ -207,15 +259,13 @@ class WordleGame:
 
 
 if __name__ == '__main__':
-    from main import get_logger
-
+    logger_ = create_root_logger()
     my_game = WordleGame(
         regex_dict=create_regex_dict(timeout_secs=10), word_length=5
     )
-    play_coro = my_game.play([
-        'Fundi?',
-        'ra?the',
-    ])
+    play_coro = my_game.play(
+        # Input your moves below, e.g. ['Fundi?', 'ra?the'] or ['Al?oIn']
+    )
     loop = asyncio.get_event_loop()
     loop.run_until_complete(play_coro)
     loop.close()

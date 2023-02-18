@@ -9,21 +9,23 @@
 
 That's it, the bot is up and running!
 
-## How to play:
+## HOW TO USE THE WORDLE BOT:
 
-Example of user input (one word at a time):
+Example of user input:
 
-    Fundi?
-    ra?the
+    Fundi? ra?the
 
 This means:
-- Letter 'f' was guessed and it's in the 1st position
-(are in capital case).
+- Two attempts were made: words 'fundi' and 'rathe'.
 
-- Letters 'a' and 'i' are present in the solution,
-but not in the 2nd and 5th position, respectively
-(are followed by question mark).
+- Letters in capital case designate the letters 
+revealed in their correct positions. 
+In this example, letter 'f' is in the 1st position in the solution.
 
-- Letters
-'u', 'n', 'd', 'r', 't', 'h' and 'e'
-are missing from the solution (are in lower case).
+- Letters followed by '?' are revealed in incorrect positions. 
+In the example letters 'i' and 'a' are present in the solution,
+but not in the 5th and 2nd positions, respectively.
+
+- All the other letters, that are in the lower case and not followed by '?', 
+are missing from the solution.
+In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
