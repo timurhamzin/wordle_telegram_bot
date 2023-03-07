@@ -33,7 +33,7 @@ class Poller:
                 await asyncio.sleep(step_sec)
             except asyncio.CancelledError:
                 log(__name__, (
-                    f'Cancelling the poller.'
+                    'Cancelling the poller.'
                 ), LoggingLevel.WARNING)
                 break
             except Exception as e:

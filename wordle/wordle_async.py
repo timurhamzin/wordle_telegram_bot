@@ -28,25 +28,24 @@ class WordleGame:
 
     rules = """HOW TO USE THE WORDLE BOT:
 
-    Example of user input:
+Example of user input:
 
-        Fundi? ra?the
+    Fundi? ra?the
 
-    This means:
-    - Two attempts were made: words 'fundi' and 'rathe'.
+This means:
+- Two attempts were made: words 'fundi' and 'rathe'.
 
-    - Letters in capital case designate the letters
-    revealed in their correct positions.
-    In this example, letter 'f' is in the 1st position in the solution.
+- Letters in capital case designate the letters
+revealed in their correct positions.
+In this example, letter 'f' is in the 1st position in the solution.
 
-    - Letters followed by '?' are revealed in incorrect positions.
-    In the example letters 'i' and 'a' are present in the solution,
-    but not in the 5th and 2nd positions, respectively.
+- Letters followed by '?' are revealed in incorrect positions.
+In the example letters 'i' and 'a' are present in the solution,
+but not in the 5th and 2nd positions, respectively.
 
-    - All the other letters, that are in the lower case and not followed by '?',
-    are missing from the solution.
-    In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
-    """
+- All the other letters, that are in the lower case
+and not followed by '?', are missing from the solution.
+In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'."""
 
     _displayed_words_max_count = 10
 
@@ -243,8 +242,9 @@ class WordleGame:
         """Rank words based on letter scores given by `chars_ranked`.
         Words with duplicated letters are downgraded."""
         ranks = {
-            w: sum(chars_ranked.get(c, 0) for c in w)
-               + self._default_word_score * (max(Counter(w).values()) == 1)
+            w: sum(chars_ranked.get(c, 0) for c in w
+                   ) + self._default_word_score * (
+                       max(Counter(w).values()) == 1)
             for w in words}
         return sorted(ranks.items(), key=lambda i: i[1], reverse=True)
 

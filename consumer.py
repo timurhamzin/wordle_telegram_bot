@@ -44,7 +44,7 @@ class Worker:
                 await self.handle_update(upd)
             except asyncio.CancelledError:
                 log(__name__, (
-                    f'Cancelling a consumer worker.'
+                    'Cancelling a consumer worker.'
                 ), LoggingLevel.WARNING)
                 break
             except Exception as e:
