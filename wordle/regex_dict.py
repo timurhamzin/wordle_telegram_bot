@@ -4,7 +4,7 @@ from typing import List, Optional
 import aiohttp as aiohttp
 from bs4 import BeautifulSoup
 
-from utils import log_exception, post
+from utils.common import log_exception, post
 
 
 def create_regex_dict(timeout_secs: int = 10):

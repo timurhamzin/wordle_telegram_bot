@@ -5,8 +5,8 @@ from typing import Optional, Tuple
 import telegram
 from bunch import bunchify
 
-import task_logger
-from utils import log, LoggingLevel
+from utils import task_logger
+from utils.common import log, LoggingLevel
 
 
 class Poller:

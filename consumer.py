@@ -4,8 +4,8 @@ from typing import List
 import telegram
 from bunch import unbunchify
 
-import task_logger
-from utils import log, LoggingLevel, log_exception
+from utils import task_logger
+from utils.common import log, LoggingLevel, log_exception
 from wordle.regex_dict import create_regex_dict
 from wordle.wordle_async import WordleGame, WordleException
 

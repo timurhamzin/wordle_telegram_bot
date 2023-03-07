@@ -44,12 +44,6 @@ def process_attempts(attempts) -> Tuple[str, set, str]:
     return ''.join(to_present), set(to_missing), ''.join(to_found)
 
 
-fyi = [
-    'bo?s?ky',
-    'c?hert',
-    'fund?i',
-]
-
 present, missing, found = process_attempts(
     [
         'Fundi?',

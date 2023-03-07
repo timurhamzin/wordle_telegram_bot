@@ -7,9 +7,9 @@ import telegram
 from dotenv import load_dotenv
 from telegram.ext import ApplicationBuilder
 
-from common import create_root_logger
-from poller import Poller
-from worker import Worker
+from poller_producer import Poller
+from consumer import Worker
+from utils.common import create_root_logger
 
 load_dotenv()
 

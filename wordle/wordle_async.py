@@ -3,8 +3,8 @@ import re
 from collections import Counter
 from typing import Tuple, List, Dict, Set, Optional
 
-from common import create_root_logger
-from utils import log_exception, log, LoggingLevel
+from utils.common import create_root_logger
+from utils.common import log_exception, log, LoggingLevel
 from wordle.regex_dict import RegexDictionary, create_regex_dict
 from wordle.reports import unique_words_played
 
@@ -25,28 +25,30 @@ class BadFormatting(BadUserInput):
 
 class WordleGame:
     """Suggest next move from user attempts expressed in user notation"""
-    _suggestions_display_limit = 10
+
     rules = """HOW TO USE THE WORDLE BOT:
 
-Example of user input:
+    Example of user input:
 
-    Fundi? ra?the
+        Fundi? ra?the
 
-This means:
-- Two attempts were made: words 'fundi' and 'rathe'.
+    This means:
+    - Two attempts were made: words 'fundi' and 'rathe'.
 
-- Letters in capital case designate the letters 
-revealed in their correct positions. 
-In this example, letter 'f' is in the 1st position in the solution.
+    - Letters in capital case designate the letters
+    revealed in their correct positions.
+    In this example, letter 'f' is in the 1st position in the solution.
 
-- Letters followed by '?' are revealed in incorrect positions. 
-In the example letters 'i' and 'a' are present in the solution,
-but not in the 5th and 2nd positions, respectively.
+    - Letters followed by '?' are revealed in incorrect positions.
+    In the example letters 'i' and 'a' are present in the solution,
+    but not in the 5th and 2nd positions, respectively.
 
-- All the other letters, that are in the lower case and not followed by '?', 
-are missing from the solution.
-In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
-"""
+    - All the other letters, that are in the lower case and not followed by '?',
+    are missing from the solution.
+    In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
+    """
+
+    _displayed_words_max_count = 10
 
     def __init__(self, regex_dict: RegexDictionary, word_length: int):
         self._word_length = word_length
@@ -128,7 +130,7 @@ In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
 
     def generate_response(self) -> str:
         response: List[str] = []
-        limit: int = self._suggestions_display_limit
+        limit: int = self._displayed_words_max_count
 
         response.append('Possible solutions:\n')
         response.extend(self._possible_solutions[:limit])
@@ -259,13 +261,11 @@ In the example, it's letters 'u', 'n', 'd', 'r', 't', 'h' and 'e'.
 
 
 if __name__ == '__main__':
-    logger_ = create_root_logger()
+    create_root_logger()
     my_game = WordleGame(
         regex_dict=create_regex_dict(timeout_secs=10), word_length=5
     )
-    play_coro = my_game.play(
-        # Input your moves below, e.g. ['Fundi?', 'ra?the'] or ['Al?oIn']
-    )
+    play_coro = my_game.play()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(play_coro)
     loop.close()

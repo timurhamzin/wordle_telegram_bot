@@ -1,5 +1,6 @@
 import enum
 import logging
+from sys import stdout
 from typing import Union, Optional
 
 import aiohttp
@@ -76,3 +77,27 @@ def log(
               else logging.getLogger(module_name_or_logger))
     log_at_level(logger, level, msg)
     return None
+
+
+def create_root_logger() -> logging.Logger:
+    import logging
+
+    result_logger = logging.getLogger()
+    result_logger.setLevel(logging.DEBUG)
+
+    file_handler = logging.FileHandler('wordle_bot_log.log')
+    file_handler.setLevel(logging.DEBUG)
+
+    stdout_handler = logging.StreamHandler(stream=stdout)
+    stdout_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    file_handler.setFormatter(formatter)
+    stdout_handler.setFormatter(formatter)
+
+    result_logger.addHandler(file_handler)
+    result_logger.addHandler(stdout_handler)
+
+    return result_logger
