@@ -48,9 +48,15 @@ class Poller:
                     item_obj: telegram.Update = bunchify(item)
                     offset = item_obj.update_id + 1
                     await self.queue.put(item_obj)
-                    log(__name__, (
-                        f'Received a message: `{item_obj.message.text}`'
-                    ), LoggingLevel.WARNING)
+                    if item_obj.message:
+                        log(__name__, (
+                            f'Received a message: `{item_obj.message.text}`'
+                        ), LoggingLevel.WARNING)
+                    else:
+                        log(__name__, (
+                            f'Received an empty message.`'
+                        ), LoggingLevel.WARNING)
+
 
     async def start(self):
         self._task = task_logger.create_task(

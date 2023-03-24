@@ -25,6 +25,8 @@ class Worker:
         my_game = WordleGame(
             regex_dict=create_regex_dict(timeout_secs=10), word_length=5
         )
+        if not update.message:
+            return
         attempts: List[str] = update.message.text.split()
         try:
             response = await my_game.play(attempts)

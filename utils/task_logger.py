@@ -35,14 +35,16 @@ def create_task(
 def _handle_task_result(
         task: asyncio.Task,
         *,
-        logger: logging.Logger,
         message: str,
         message_args: Tuple[Any, ...] = (),
+        logger: Optional[logging.Logger] = None
 ) -> None:
     try:
         task.result()
     except asyncio.CancelledError:
         pass
     except Exception as e:  # pylint: disable=broad-except
+        if not logger:
+            logger = logging.getLogger(__name__)
         logger.exception(' '.join([message, f'Error message: {e}']),
                          *message_args)
