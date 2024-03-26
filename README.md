@@ -1,4 +1,4 @@
-# Telegram bot helping to win at Wordle puzzles (https://www.nytimes.com/games/wordle/index.html)  
+# Telegram bot helping to solve Wordle puzzles (https://www.nytimes.com/games/wordle/index.html)  
 
 ## Deployment:
 - Clone/download GitHub repo.
